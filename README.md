@@ -1,8 +1,8 @@
-- 👋 Hi, I’m @fenderfeniks
-- 👀 I’m interested in ... games
-- 🌱 I’m currently learning ... c#
-- 💞️ I’m looking to collaborate on ...
-- 📫 How to reach me ... you can write me discord: xospet#8571  email: mallienotxc@gmail.com  telegram: https://t.me/fenderfeniks
+- 👋 Hi, I’m Maksim Novikov
+- 👀 I’m interested in games, sport, finance, a little bit media
+- 🌱 I’m currently learning machine learning
+- 💞️ I’m looking to collaborate for kaggle competitions or any works
+- 📫 you can write me email: mallienotxc@gmail.com  telegram: https://t.me/fenderfeniks
 
 
 <!---
