@@ -137,11 +137,13 @@ Serving        FastAPI · uvicorn · vLLM · aiogram · SlowAPI
 
 ## Образование
 
-- Бакалавр, менеджмент — Уральский федеральный университет, 2019.
-- Повышение квалификации — Skillbox, Data Science / ML Engineer, 800 академических часов. В рамках курса реализовал 20 практических работ: EDA, классические ML-модели, CV (YOLO/SSD/R-CNN), NLP, GAN/VAE, RL (DQN).
+- Бакалавр, Математическое моделирование / Менеджмент в IT — Уральский федеральный университет, 2019.
+
+## Дополнительные курсы
+
+- Повышение квалификации — Skillbox, Data Science & Machine Learning Engineer, 800 академических часов. В рамках курса реализовал 20 практических работ: EDA, классические ML-модели, CV (YOLO/SSD/R-CNN), NLP, GAN/VAE, RL (DQN).
 
 ### Самостоятельное обучение
-
 1. **Прикладная математика для машинного обучения** — Дианкин И.Д., Пензар Д.Д. (ф-т биоинженерии и биоинформатики МГУ). [Открытый курс](https://teach-in.ru/course/applied-mathematics-for-machine-learning)
 2. **Прикладное машинное обучение / ML-basic course spring 2024** — Нейчев Р., Гончаренко В. (МФТИ). [YouTube](https://www.youtube.com/watch?v=MOSNeCYa_bs&list=PLJR10EXrBaAtNQWNssJrFtIF7d4sb9P50)
 3. **NLP & RL** — Карпачев Н., Нейчев Р., Лунева Н. (МФТИ). [YouTube](https://www.youtube.com/watch?v=r9cLXcOczTI&list=PLJR10EXrBaAvvUfbs_ZAr0biScOl4Udcb&index=15)
