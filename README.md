@@ -1,56 +1,40 @@
 # Максим Новиков
 
-ML Engineer — строю production-grade системы машинного обучения: от табличных моделей и кредитного скоринга до LLM fine-tuning и машинного перевода для низкоресурсных языков.
+NLP / LLM Engineer — специализируюсь на дообучении языковых моделей и построении production-ready NLP-систем: от классификации и NLI до LLM fine-tuning, машинного перевода и RAG-пайплайнов.
 
-Специализация: полный цикл ML-проекта — подготовка данных, обучение, трекинг экспериментов, serving, оркестрация переобучения, мониторинг. Основной стек: Python, CatBoost / LightGBM / XGBoost, PyTorch, Hydra, MLflow, Airflow, FastAPI, Docker.
+Основной фокус — **полный цикл NLP-проекта**: подготовка текстовых данных (очистка, дедупликация, чанкование), дообучение (CPT / SFT / LoRA / QLoRA), оценка качества (BLEU, ROUGE, NLI-judge, LLM-as-a-Judge), serving (FastAPI, vLLM, SSE-стриминг), оркестрация переобучения и мониторинг в продакшне. Параллельно — опыт в tabular ML (кредитный скоринг, CatBoost/LightGBM/XGBoost) и CV.
+
+Стек: Python · PyTorch · Transformers · PEFT/LoRA · PyTorch Lightning · Hydra · MLflow · Airflow · FastAPI · vLLM · Docker · Kubernetes
 
 ---
 
 ## Проекты
 
-Проекты расположены в порядке от ранних к более зрелым — каждый следующий строится на опыте предыдущего.
+Расположены тематически — сначала NLP/LLM (основная специализация), затем tabular ML и ранние работы.
 
 ---
 
-### Ранние проекты — NLP и CV с базовым деплоем
-
-Три проекта, в которых сформировался базовый пайплайн: модель → FastAPI / Gradio → Docker. Без полной MLOps-обёртки, но с реальными архитектурными и исследовательскими решениями.
+### LLM Fine-Tuning и RAG — основная специализация
 
 ---
 
-**[fake-news-detection-ml-system](https://github.com/fenderfeniks/fake-news-detection-ml-system)**
+**[nlptemplate_decoder_rag](https://github.com/fenderfeniks/nlptemplate_decoder_rag)**
 
-Классификация фейковых новостей через ансамбль рекуррентных архитектур. Полный ML-пайплайн: предобработка текста (очистка URL, стоп-слова, Word2Vec-эмбеддинги) → три модели (RNN / LSTM / GRU) → взвешенный ансамбль → FastAPI → Docker.
+Production-ready шаблон для задач генерации текста (Decoder / LLM) и семантического поиска (RAG). Главная идея: **смоук-тест любой модели на своих данных без обучения** — если zero-shot результаты устраивают, сервис готов к деплою буквально за день.
 
-Ключевые решения: все три архитектуры обучены независимо с подбором гиперпараметров (hidden dim, num_layers, dropout, lr) через Optuna по ROC AUC; веса ансамбля также оптимизированы Optuna — не фиксированное усреднение, а подбор оптимальной комбинации. Каждая модель возвращает вероятность через API, итоговое решение принимается ансамблем. Метрики: Accuracy, F1, ROC AUC.
+Два полных пайплайна дообучения. Для декодера: CPT (sequence packing — конкатенация потока текстов и нарезка на блоки фиксированного размера в токенах) и SFT (`prompt + separator + target` с маскировкой промпта в loss). Для RAG: contrastive learning энкодера через MNRL / Triplet loss, чанкование документов с перекрытием, индексация FAISS (Flat / HNSW) или Qdrant. Оценка генерации прямо во время SFT через `GenerationEvaluationCallback`: BLEU, ROUGE + опционально LLM-as-a-Judge (OpenRouter) или NLI-judge (RoBERTa) — подключаются через конфиг, инициализируются лениво. Транспортировка модели через манифест: `promote` (LoRA из mlruns → storage, сравнение по val_loss), `merge_lora` (LoRA + base → merged model); три бэкенда хранилища — local, S3, HF Hub.
 
----
-
-**[Background-Removal-and-Replacement](https://github.com/fenderfeniks/Background-Removal-and-Replacement)**
-
-CV-проект по удалению и замене фона на изображениях с benchmarking'ом двух сегментационных моделей.
-
-Исследование: сравнение **BiRefNet** и **RMBG** на датасете **DUTS-TE** по метрикам IoU, Dice, MAD. BiRefNet показал лучшее качество (IoU `0.9337`, Dice `0.9651`, MAD `0.0098`), RMBG — IoU `0.9288`. Дополнительно построен и оценён взвешенный ансамбль `0.85 · BiRefNet + 0.15 · RMBG`, который улучшил overlap-метрики относительно бейзлайна. Продукт упакован в интерактивный **Gradio**-интерфейс с тремя режимами замены фона: сплошной цвет, прозрачный PNG, произвольное изображение.
+Три микросервиса: API Gateway (RAGOrchestrator + PromptManager с шаблонами из YAML), RAG API (FAISS-поиск), Decoder API (vLLM, OpenAI-compatible). 10 Airflow DAG-ов (retrain, promote, quality control, analytics — для обоих пайплайнов). Helm chart, Streamlit-демо, Telegram-бот, тест-сьют ~80% покрытие. Вся конфигурация через Hydra — смена модели, квантизации, лосса или индекса через CLI.
 
 ---
 
-**[EMNIST-Handwritten-Character-Recognition](https://github.com/fenderfeniks/EMNIST-Handwritten-Character-Recognition)**
+**[machine_translate_rus_abkhaz](https://github.com/fenderfeniks/machine_translate_rus_abkhaz)**
 
-Распознавание рукописных символов (47 классов: цифры + буквы) на датасете EMNIST Balanced (112 800 обучающих, 18 800 тестовых изображений), деплой через FastAPI с интерактивным фронтендом.
+Машинный перевод с русского на абхазский язык — один из наиболее морфологически сложных и низкоресурсных языков Кавказа. Полный цикл: Continual Pre-Training (CPT) на монолингвальном корпусе → Supervised Fine-Tuning (SFT) на 147k параллельных парах → деплой.
 
-Последовательное сравнение архитектур: Logistic Regression (~67%) → MLP с BatchNorm и Dropout (~86%) → CNN (~88%+). Особое внимание уделено предобработке входа при инференсе: данные EMNIST приходят транспонированными, поэтому пайплайн включает транспонирование, морфологическую дилатацию (OpenCV) для утолщения линий, Bilateral Filter, центрирование по center_of_mass и стандартизацию. Финальная модель обучена в Google Colab (T4, 50–100 эпох, ReduceLROnPlateau scheduler) и задеплоена в Docker.
+Ключевые NLP-решения: скрининг базовых моделей через smoke-tests по перплексии (Qwen3-4B ~43 vs phi-4 ~1757 на абхазском алфавите), анализ P99 длин токенов для выбора `packing_chunk_size=512`, MinHash LSH дедупликация корпуса, LoRA-aware чекпоинтинг (сохраняет только дельта-веса), маскировка промпта через `prompt_len`, `GenerationEvaluationCallback` с BLEU и таблицами генераций в MLflow на каждой валидации.
 
----
-
-### Kaggle — соревновательный ML
-
----
-
-**[Kaggle-House-Prices-Top5pct-result](https://github.com/fenderfeniks/Kaggle-House-Prices-Top5pct-result)**
-
-House Prices: Advanced Regression Techniques — **Top 5% лидерборда**.
-
-Feature engineering на структурированных данных о недвижимости: взаимодействия признаков, кодирование категорий, обработка выбросов, работа с пропусками. Ансамблирование градиентных бустингов (CatBoost / LightGBM / XGBoost) со стекингом. Основная метрика — RMSE логарифма цены.
+Инфраструктура: Hydra + PyTorch Lightning + MLflow Registry (Staging/Production) + PEFT/LoRA + BitsAndBytes 4-bit + Flash Attention 2 + Airflow DAGs + Helm (K8s) + FastAPI с SSE стримингом + Telegram-бот + Streamlit-демо + Prometheus/Grafana + GitHub Actions CI.
 
 ---
 
@@ -58,11 +42,31 @@ Feature engineering на структурированных данных о не
 
 Natural Language Inference на 15 языках (трёхклассовая классификация: Entailment / Neutral / Contradiction). Финальный результат: Test Accuracy **0.773**, Test F1 **0.773**.
 
-Серьёзное исследование: smoke-тест четырёх предобученных NLI-архитектур (DeBERTa v3, XLM-RoBERTa, ModernBERT) показал доминирование DeBERTa — Disentangled Self-Attention лучше всего работает для cross-attention между посылкой и гипотезой. Ключевое архитектурное решение — кастомный `DynamicTextCollator`: наивная конкатенация текстов давала ~33% accuracy (случайное угадывание); коллатор корректно подаёт пару как `text` + `text_pair`, что позволяет токенизатору вставить `[SEP]` и сгенерировать `token_type_ids`. LoRA-настройка через overfitting probe: все комбинации target modules сходились к Acc=1.0; выбраны `query_proj, key_proj, value_proj` (0.24% обучаемых параметров) как минимальная конфигурация с достаточной выразительностью. Вокруг задачи выстроен полный MLOps-стек: MLflow + Model Registry, FastAPI, Airflow DAGs, Docker/K8s, Telegram-бот, Prometheus/Grafana.
+Исследование архитектур: smoke-тест четырёх NLI-моделей (DeBERTa v3, XLM-RoBERTa, ModernBERT) показал доминирование DeBERTa — Disentangled Self-Attention лучше всего работает для cross-attention между посылкой и гипотезой. Ключевое инженерное решение — кастомный `DynamicTextCollator`: наивная конкатенация текстов давала ~33% accuracy (случайное угадывание); коллатор корректно подаёт пару как `text` + `text_pair`, что позволяет токенизатору вставить `[SEP]` и сгенерировать `token_type_ids`. LoRA-настройка через overfitting probe: выбраны `query_proj, key_proj, value_proj` (0.24% обучаемых параметров) как минимальная конфигурация с достаточной выразительностью.
+
+Вокруг задачи выстроен полный MLOps-стек: MLflow + Model Registry, FastAPI, Airflow DAGs, Docker/K8s, Telegram-бот, Prometheus/Grafana.
 
 ---
 
-### Production ML — табличные модели с полным MLOps-циклом
+**[fake-news-detection-ml-system-mlops](https://github.com/fenderfeniks/fake-news-detection-ml-system-mlops)**
+
+MLOps-переработка классификатора текста: задача spam/ham (TREC 2006, 72.3% / 27.7% имбаланс). Фокус — методичное исследование пространства решений и production-обёртка.
+
+Бенчмарк четырёх BERT-энкодеров под идентичными условиями (3 эпохи, head-only fine-tuning). Победитель — `deepset/bert-base-cased-squad2`: лучший F1 (0.700) при времени обучения 3.4 мин. Автоматическая балансировка через inverse-frequency weights — прирост Val F1 с 0.706 до **0.922**. LoRA ablation: overfitting probe на 100 шагах, конфигурация `r=8, α=8, target=[query, value]` (0.17% параметров) оказалась достаточной. Финальные метрики: Val F1 **0.9655**, Test F1 **0.9354**.
+
+Стек: PyTorch Lightning + PEFT/LoRA + Hydra + MLflow Registry + FastAPI + aiogram + Prometheus/Grafana + Airflow (KubernetesPodOperator) + Kubernetes + GitHub Actions CI.
+
+---
+
+**[fake-news-detection-ml-system](https://github.com/fenderfeniks/fake-news-detection-ml-system)**
+
+Ранний NLP-проект: классификация фейковых новостей через ансамбль рекуррентных архитектур. Предобработка текста (очистка, стоп-слова, Word2Vec) → три модели (RNN / LSTM / GRU) → взвешенный ансамбль → FastAPI → Docker.
+
+Примечательное решение: веса ансамбля подобраны Optuna по ROC AUC — не фиксированное усреднение, а оптимальная комбинация из трёх независимо обученных моделей.
+
+---
+
+### Production ML — tabular-модели с полным MLOps-циклом
 
 ---
 
@@ -80,57 +84,41 @@ Natural Language Inference на 15 языках (трёхклассовая кл
 
 ---
 
-### NLP с MLOps — развитие от модели к шаблону
+**[Kaggle-House-Prices-Top5pct-result](https://github.com/fenderfeniks/Kaggle-House-Prices-Top5pct-result)**
+
+House Prices: Advanced Regression Techniques — **Top 5% лидерборда**. Feature engineering на структурированных данных, ансамблирование градиентных бустингов (CatBoost / LightGBM / XGBoost) со стекингом.
 
 ---
 
-**[fake-news-detection-ml-system-mlops](https://github.com/fenderfeniks/fake-news-detection-ml-system-mlops)**
-
-MLOps-переработка исходного fake-news проекта на базе задачи классификации email (spam / ham, TREC 2006, 72.3% / 27.7% имбаланс классов). Полный production-пайплайн с заменой архитектуры и добавлением MLOps-обёртки.
-
-Исследование: бенчмарк четырёх BERT-энкодеров под идентичными условиями (3 эпохи, head-only fine-tuning). Победитель — `deepset/bert-base-cased-squad2`: лучший F1 (0.700) и наименьший loss при времени обучения 3.4 мин. Автоматическая балансировка через inverse-frequency weights дала прирост Val F1 с 0.706 до **0.922**. LoRA ablation: overfitting probe на 100 шагах показал, что конфигурация `r=8, α=8, target=[query, value]` (0.17% обучаемых параметров) достаточна — всё сходится к Acc=1.0. Выбор `max_length=256` против 512 обоснован компромиссом recall / скорость (6.6 мин → 3.4 мин). Финальные метрики на ресурсно-ограниченном локальном запуске: Val F1 **0.9655**, Test F1 **0.9354**.
-
-Стек: PyTorch Lightning + PEFT/LoRA + Hydra + MLflow Registry (Staging/Production) + FastAPI + Telegram-бот (aiogram, webhook + polling) + Prometheus/Grafana + Airflow (KubernetesPodOperator) + Kubernetes + GitHub Actions CI.
+### CV-проекты
 
 ---
 
-### LLM Fine-Tuning — CPT + SFT + полный MLOps
+**[Background-Removal-and-Replacement](https://github.com/fenderfeniks/Background-Removal-and-Replacement)**
+
+Сравнение BiRefNet и RMBG на датасете DUTS-TE (IoU, Dice, MAD), взвешенный ансамбль `0.85 · BiRefNet + 0.15 · RMBG`, Gradio-интерфейс с тремя режимами замены фона.
 
 ---
 
-**[machine_translate_rus_abkhaz](https://github.com/fenderfeniks/machine_translate_rus_abkhaz)**
+**[EMNIST-Handwritten-Character-Recognition](https://github.com/fenderfeniks/EMNIST-Handwritten-Character-Recognition)**
 
-Машинный перевод с русского на абхазский язык — один из наиболее морфологически сложных и низкоресурсных языков Кавказа. Полный цикл: Continual Pre-Training (CPT) на монолингвальном корпусе → Supervised Fine-Tuning (SFT) на 147k параллельных парах → деплой.
-
-Архитектурные решения: скрининг моделей через smoke-tests (Qwen3-4B vs phi-4 — перплексия phi-4 ~1757 на абхазском алфавите против ~43 у Qwen), анализ P99 длин токенов для выбора `packing_chunk_size=512`, MinHash LSH дедупликация, LoRA-aware чекпоинтинг (сохраняет только дельта-веса), маскировка промпта через `prompt_len`, `GenerationEvaluationCallback` с BLEU и таблицами генераций в MLflow на каждом шаге валидации.
-
-Инфраструктура: Hydra + PyTorch Lightning + MLflow Registry (Staging/Production) + PEFT/LoRA + BitsAndBytes 4-bit + Flash Attention 2 + Airflow DAGs + Helm chart (K8s) + FastAPI с SSE стримингом + Telegram-бот + Streamlit демо + Prometheus/Grafana + GitHub Actions CI.
-
----
-
-### Шаблоны — переиспользуемая инфраструктура
-
----
-
-**[nlptemplate_decoder_rag](https://github.com/fenderfeniks/nlptemplate_decoder_rag)**
-
-Production-ready шаблон для задач генерации текста (Decoder / LLM) и семантического поиска (RAG). Цель — от датасета до работающего API за минимальное количество шагов, без написания инфраструктурного кода с нуля.
-
-Два полных пайплайна обучения: SFT/CPT с LoRA/QLoRA (PyTorch Lightning) и дообучение RAG-энкодера через contrastive learning (MNRL / Triplet loss). Три микросервиса: API Gateway (RAGOrchestrator + PromptManager), RAG API (FAISS Flat/HNSW), LLM API (vLLM, OpenAI-compatible). Готовые конфиги архитектур: Qwen2.5-1.5B, Qwen3-4B-Instruct, Phi-4-mini, bge-m3. 9 Airflow DAG-ов (retrain, promote, quality control, analytics — для обоих пайплайнов). Helm chart, Streamlit демо, полный тест-сьют с моками. Вся конфигурация через Hydra — смена модели, квантизации, индекса или лосса через CLI без правки кода.
+Распознавание рукописных символов (47 классов, EMNIST Balanced). Последовательное сравнение Logistic Regression → MLP → CNN. Нетривиальный инференс-пайплайн: транспонирование, морфологическая дилатация, Bilateral Filter, центрирование по `center_of_mass`.
 
 ---
 
 ## Стек
 
 ```
-Модели         CatBoost · LightGBM · XGBoost · PyTorch · Transformers · PEFT/LoRA · pytorch_lightning
+NLP / LLM      Transformers · PEFT/LoRA · PyTorch Lightning · vLLM · BitsAndBytes · Flash Attention
+               datasets · sacrebleu · rouge-score · evaluate · FAISS · Qdrant
+Tabular ML     CatBoost · LightGBM · XGBoost · Optuna · SHAP
 Конфигурация   Hydra · OmegaConf
-Трекинг        MLflow
-Данные         DuckDB · PySpark · Pandas · DVC · datasets
-Serving        FastAPI · uvicorn · vLLM · aiogram · SlowAPI
+Трекинг        MLflow · MLflow Registry
+Данные         DuckDB · PySpark · Pandas · DVC · datasketch (MinHash)
+Serving        FastAPI · uvicorn · vLLM · aiogram · slowapi · SSE
 Мониторинг     Prometheus · Grafana
 Оркестрация    Airflow · Kubernetes · Helm
-Инфраструктура Docker · GitHub Actions · uv · ruff
+Инфраструктура Docker · GitHub Actions · uv · ruff · pytest
 ```
 
 ---
@@ -138,14 +126,12 @@ Serving        FastAPI · uvicorn · vLLM · aiogram · SlowAPI
 ## Образование
 
 - Бакалавр, Математическое моделирование / Менеджмент в IT — Уральский федеральный университет, 2019.
-
-## Дополнительные курсы
-
-- Повышение квалификации — Skillbox, Data Science & Machine Learning Engineer, 800 академических часов. В рамках курса реализовал 20 практических работ: EDA, классические ML-модели, CV (YOLO/SSD/R-CNN), NLP, GAN/VAE, RL (DQN).
+- Повышение квалификации — Skillbox, Data Science & Machine Learning Engineer, 800 академических часов (EDA, классические ML-модели, CV, NLP, GAN/VAE, RL).
 
 ### Самостоятельное обучение
-1. **Прикладная математика для машинного обучения** — Дианкин И.Д., Пензар Д.Д. (ф-т биоинженерии и биоинформатики МГУ). [Открытый курс](https://teach-in.ru/course/applied-mathematics-for-machine-learning)
-2. **Прикладное машинное обучение / ML-basic course spring 2024** — Нейчев Р., Гончаренко В. (МФТИ). [YouTube](https://www.youtube.com/watch?v=MOSNeCYa_bs&list=PLJR10EXrBaAtNQWNssJrFtIF7d4sb9P50)
+
+1. **Прикладная математика для машинного обучения** — Дианкин И.Д., Пензар Д.Д. (МГУ). [Открытый курс](https://teach-in.ru/course/applied-mathematics-for-machine-learning)
+2. **ML-basic course spring 2024** — Нейчев Р., Гончаренко В. (МФТИ). [YouTube](https://www.youtube.com/watch?v=MOSNeCYa_bs&list=PLJR10EXrBaAtNQWNssJrFtIF7d4sb9P50)
 3. **NLP & RL** — Карпачев Н., Нейчев Р., Лунева Н. (МФТИ). [YouTube](https://www.youtube.com/watch?v=r9cLXcOczTI&list=PLJR10EXrBaAvvUfbs_ZAr0biScOl4Udcb&index=15)
 
 ---
