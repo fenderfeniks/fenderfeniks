@@ -45,8 +45,8 @@ Decoder API (FastAPI) как тонкая обёртка над vLLM (OpenAI-com
 
 Четыре независимых пайплайна. **sequence_pipeline** — классификация и регрессия на уровне текста в трёх режимах: multiclass, NLI (пара premise/hypothesis с корректной подачей через text_pair), regression. **token_pipeline** — разметка токенов с subword-alignment (NER, POS-tagging, span-классификация). **qa_pipeline** — extractive QA: модель находит ответ как span внутри контекста, поддержка sliding window для длинных документов. **similarity_pipeline** — два суб-пайплайна: **bi-encoder** (независимое кодирование, векторный индекс FAISS/Qdrant, режим index_db) и **cross-encoder** (совместная обработка пары, точный rescoring). Функции потерь: CrossEntropy, FocalLoss, MSE, Huber, MNRL, Triplet, BCE with Logits — переключаются через конфиг. LoRA / полный файнтюн, квантизация 4/8-bit, embedding resize.
 
-REST API (FastAPI) с эндпоинтами predict и rerank, rate limiter, Prometheus-метрики. Источники данных: local, HuggingFace Datasets, Kaggle, mixed с весами. Пайплайн обработки: cleaner → splitter → dedup (exact / MinHash LSH) → filtering → tokenization → collator. Airflow DAGs, Helm-чарт, pytest (структура готова, наполнение в роадмапе). Вся конфигурация централизованно управляется через Hydra.
-**Roadmap:** сквозное тестирование всех пайплайнов, pytest-покрытие, адаптация Docker/Makefile.
+REST API (FastAPI) с эндпоинтами predict и rerank, rate limiter, Prometheus-метрики. Источники данных: local, HuggingFace Datasets, Kaggle, mixed с весами. Пайплайн обработки: cleaner → splitter → dedup (exact / MinHash LSH) → filtering → tokenization → collator. Airflow DAGs, Helm-чарт, pytest. Вся конфигурация централизованно управляется через Hydra.
+**Roadmap:** сквозное тестирование всех пайплайнов, адаптация Docker/Makefile.
 
 ---
 
